@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 def send_email_async(subject, message, from_email, recipient_list):
     try:
         send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+        print("EMAIL SENT SUCCESSFULLY")
     except Exception as e:
         print("EMAIL ERROR:", e)
 
@@ -40,7 +41,7 @@ def contact_view(request):
         # 🔥 Run email in background thread
         threading.Thread(
             target=send_email_async,
-            args=(subject, full_message, settings.EMAIL_HOST_USER, ['dewanisonal03@gmail.com'])
+            args=(subject, full_message, 'dewanisonal03@gmail.com', ['dewanisonal03@gmail.com'])
         ).start()
 
         return render(request, 'index.html', {'success': True, 'scroll_to': 'contact'})
