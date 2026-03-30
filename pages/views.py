@@ -1,39 +1,43 @@
-import threading
-
 from django.shortcuts import render
-from django.http import HttpResponse
-from django.template import loader
-from django.core.mail import send_mail
-from django.shortcuts import render
-from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+import os
 
 
-# Create your views here.
 def contact_view(request):
     if request.method == "POST":
         print("FORM SUBMITTED")
 
-        print("USER:", settings.EMAIL_HOST_USER)
-
         name = request.POST.get('name')
         email = request.POST.get('email')
-        subject = request.POST.get('subject')
+        subject = f"New message from {name}"
         message = request.POST.get('message')
 
         full_message = f"""
-            Name: {name}
-            Email: {email}
-            
-            Message:
-            {message}
-        """
+Name: {name}
+Email: {email}
+
+Message:
+{message}
+"""
 
         try:
-            send_mail(subject, full_message, 'dewanisonal03@gmail.com',  ['dewanisonal03@gmail.com'], fail_silently=False)
-            print("EMAIL SENT SUCCESSFULLY")
+            message = Mail(
+                from_email='dewanisonal03@gmail.com',
+                to_emails='dewanisonal03@gmail.com',
+                subject=subject,
+                plain_text_content=full_message
+            )
+
+            sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+            response = sg.send(message)
+
+            print("STATUS CODE:", response.status_code)
+
         except Exception as e:
             print("EMAIL ERROR:", e)
+            return render(request, 'index.html', {'error': str(e)})
+
         return render(request, 'index.html', {'success': True, 'scroll_to': 'contact'})
 
     return render(request, 'index.html')
