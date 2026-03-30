@@ -1,3 +1,5 @@
+import threading
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import loader
@@ -8,34 +10,39 @@ from django.views.decorators.csrf import csrf_exempt
 
 
 # Create your views here.
+def send_email_async(subject, message, from_email, recipient_list):
+    try:
+        send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+    except Exception as e:
+        print("EMAIL ERROR:", e)
+
+
 def contact_view(request):
     if request.method == "POST":
         print("FORM SUBMITTED")
+
+        print("USER:", settings.EMAIL_HOST_USER)
+        print("PASS:", settings.EMAIL_HOST_PASSWORD)
+
         name = request.POST.get('name')
         email = request.POST.get('email')
         subject = request.POST.get('subject')
         message = request.POST.get('message')
 
-        try:
-            full_message = f"""
+        full_message = f"""
             Name: {name}
             Email: {email}
-
+            
             Message:
             {message}
-            """
+        """
 
-            send_mail(
-                subject,
-                full_message,
-                settings.EMAIL_HOST_USER,
-                ['dewanisonal03@gmail.com'],
-                fail_silently=False,
-            )
+        # 🔥 Run email in background thread
+        threading.Thread(
+            target=send_email_async,
+            args=(subject, full_message, settings.EMAIL_HOST_USER, ['dewanisonal03@gmail.com'])
+        ).start()
 
-            return render(request, 'index.html', {'success': True, 'scroll_to': 'contact'})
-
-        except Exception as e:
-            return render(request, 'index.html', {'error': 'Something went wrong. Please try again.'})
+        return render(request, 'index.html', {'success': True, 'scroll_to': 'contact'})
 
     return render(request, 'index.html')
